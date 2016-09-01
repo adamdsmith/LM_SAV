@@ -8,4 +8,4 @@ Authors (affiliation):
 
 The easiest way to access the data and code necessary to reproduce the entire analysis is to [fork and clone](https://help.github.com/articles/fork-a-repo/) this repository.
 
-Click [here](Matta_SAV.md) to see an overview of the SAV analysis.
+Click [here](SAV_modelling.md) to see an overview of the SAV analysis.
