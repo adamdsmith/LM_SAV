@@ -1,9 +1,3 @@
--   [Generalized Additive Models (GAMs)](#generalized-additive-models-gams)
-    -   [Association between water depth and SAV](#association-between-water-depth-and-sav)
--   [Changes in SAV coverage in Lake Mattamuskeet](#changes-in-sav-coverage-in-lake-mattamuskeet)
-    -   [Spatially-explicit estimates of SAV coverage](#spatially-explicit-estimates-of-sav-coverage)
-    -   [Changes in SAV area, Chesapeake Bay SAV classification](#changes-in-sav-area-chesapeake-bay-sav-classification)
-
 This document describes the summary and analysis of sampling related to submerged aquatic vegetation (SAV) in Lake Mattamuskeet. Sampling occurred in 1989, 1991, 1993, 1995, 1997, 2004, 2013, 2014, and 2015.
 
 The specific objective of this document is:
@@ -28,10 +22,6 @@ The east and west basins exhibit similar relationships between water depth and S
 
 The following figure illustrates the changing association between water depth and SAV. The y-axis represents the contribution to the additive predictor at a particular water depth in a given year. In terms of the proportion of SAV coverage, a contribution of 1 (-1) to the additive predictor corresponds to a 50% increase (decrease) in SAV coverage. However, the proportional change in SAV coverage with increasing contribution is not linear. For example, contributions of 2.4 (-2.4) and 6.3 (-6.3) correspond to 75% and 90% increases (decreases) in SAV coverage, respectively. Shading illustrates the 95% confidence interval of the associations and circles the deviations of the observed data from the fitted association, respectively.
 
-    ## Loading objects:
-    ##   west_dys_c
-    ##   east_dys_c
-
 ![](./Rpubs/figs/SAV_depth2-1.png)
 
 Changes in SAV coverage in Lake Mattamuskeet
@@ -39,9 +29,6 @@ Changes in SAV coverage in Lake Mattamuskeet
 
 Spatially-explicit estimates of SAV coverage
 --------------------------------------------
-
-    ## Loading objects:
-    ##   sav_rasts
 
 ![](./Rpubs/figs/SAV_maps-1.png)
 
