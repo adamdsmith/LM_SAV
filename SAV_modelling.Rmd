@@ -1,0 +1,151 @@
+---
+output:
+ md_document:
+   variant: markdown_github
+   toc: true
+   toc_depth: 2
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 250, scipen=999)
+knitr::opts_chunk$set(message=FALSE, warning=FALSE, echo = FALSE,
+                      fig.path="./Rpubs/figs/", cache.path="./Rpubs/cache/")
+```
+
+```{r load}
+## Install pacman package if not yet installed:
+# install.packages("pacman")
+
+# Load necessary packages
+pacman::p_load(readxl, reshape, dplyr, mgcv, sp, rgdal, rgeos, 
+               raster, ggplot2, viridis)
+# readxl:       Reading data from Excel
+# reshape:      Data manipulation
+# dplyr:        Data manipulation made easier
+# mgcv:         Generalized additive models (beta regression)
+# sp:           GIS-related functions
+# rgdal:        GIS-related functions
+# rgeos:        GIS-related functions
+# raster:       Raster creation/manipulation functions
+# ggplot2:      Graphic creation
+# viridis:      Color palettes for graphics
+
+# Load some custom utility functions
+source("./R/utils.R")
+source("./R/snapping.R")
+```
+
+```{r data}
+# Load SAV data spreadsheet and convert to usable format
+sav_ws <- readxl_allsheets("./Data/SAV_final.xlsx", 
+                           col_types = c("text", rep("numeric", 5),
+                                         "text", "numeric"))
+sav <- as.data.frame(do.call(rbind, sav_ws)) %>%
+  mutate(depth = -1 * convert_length(depth, from = "cm", to = "ft")) %>% # convert depth to ft
+  filter(!is.na(depth)) # Drop records with missing depth
+
+# Number of data points
+n_recs <- nrow(sav)
+
+sav <- sav %>%
+  # Transform response y with % values between 0 and 100 to 
+  # proportion values on the interval (0,1):
+  mutate(sav = (sav / 100 * (n_recs - 1) + 0.5) / n_recs,
+         cYear = factor(year))
+```
+
+```{r fix_pts, fig.height=3, fig.width=6}
+# Load Lake polygon
+LM <- readOGR("./GIS", "LM_poly", verbose = FALSE)
+LM <- gBuffer(LM, byid = TRUE, width = 0) # To correct invalid geometry
+plan_proj <- proj4string(LM)
+
+# First, create SpatialPointsDataFrame in projected coordinates
+sav_pts <- SpatialPointsDataFrame(coords = sav[, c("lon", "lat")],
+                                  proj4string = CRS("+proj=longlat +datum=WGS84"),
+                                  data = sav)
+sav_pts <- spTransform(sav_pts, plan_proj)
+
+valid_pts <- which(apply(sav_pts %over% LM, 1, function(row) !all(is.na(row))))
+invalid_pts <- which(apply(sav_pts %over% LM, 1, function(row) all(is.na(row))))
+valid_sav <- sav_pts[valid_pts, ]
+#par(mai = rep(0.2, 4))
+#plot(crop(LM, extent(t(apply(coordinates(sav_pts), 2, function(i) c(min(i), max(i)))))))
+#plot(sav_pts[valid_pts, ], add=T, col = "green", pch = 16)
+#plot(sav_pts[invalid_pts, ], add = T, col = "red", pch = 16)
+
+LM_lines <- as(LM, "SpatialLinesDataFrame") %>% disaggregate()
+fixed_sav_pts = snapPointsToLines(sav_pts[invalid_pts, ], LM_lines)
+#plot(fixed_sav_pts, add=T, col = "orange", pch = 18)
+
+# Put the pieces back together
+pt_list <- list(valid_sav, fixed_sav_pts)
+sp = do.call(rbind, lapply(pt_list, function(x) as(x, "SpatialPoints")))
+df = do.call(rbind, lapply(pt_list, function(x) x@data))
+sav_pts <- SpatialPointsDataFrame(sp, df, coords.nrs = pt_list[[1]]@coords.nrs, match.ID = FALSE)
+
+## Add UTM x-y coordinates to data
+sav <- data.frame(sav_pts@data, 
+                  x = coordinates(sav_pts)[, 1],
+                  y = coordinates(sav_pts)[, 2])
+```
+
+This document describes the summary and analysis of sampling related to submerged aquatic vegetation (SAV) in Lake Mattamuskeet.  Sampling occurred in `r ox_comma(sort(unique(sav$year)))`.  
+
+The specific objective of this document is:
+
+1. To generate spatially-explicit predictions of SAV in each sampling year and quantify trends in SAV coverage over the sampling period (`r with(sav, paste(min(year), max(year), collapse = " - "))`).
+
+# Generalized Additive Models (GAMs)
+
+We used generalized additive models (GAMs) to generate spatially-explicit models of SAV coverage on the west and east basins of Lake Mattamuskeet during the nine years of SAV surveys between 1989 and 2015. See the manuscript for details of the models.  Model assessment (i.e., information criteria, the percentage of deviance explained, and bootstrapped root mean squared error) invariably supported models for both basins that included:
+
+1. a smooth of depth by year (categorical);
+2. a spatial smooth (x, y position) by year (categorical); and 
+3. a main effect of year (categorical)
+
+The code for generating, comparing, and validating these models is contained in [`SAV_model_comparison.R`](./R/SAV_model_comparison.R).
+
+## Association between water depth and SAV
+
+The east and west basins exhibit similar relationships between water depth and SAV coverage, but varied in the time frame of this manifestation.  Early in the survey period (1989 - 1993), SAV coverage was relatively consistent across the range of measured depths for both basins, suggesting little limitations to SAV growth associated with water depth and, presumably, certain water quality attributes.  Beginning in 1995 in the west basin, however, SAV coverage declined with increasing water depth, a pattern that has persisted thereafter. The same shift is apparent in the east basin, but the decline in SAV coverage associated with increasing water depth was not first observed until 2014.
+
+The following figure illustrates the changing association between water depth and SAV.  The y-axis represents the contribution to the additive predictor at a particular water depth in a given year.  In terms of the proportion of SAV coverage, a contribution of 1 (-1) to the additive predictor corresponds to a 50% increase (decrease) in SAV coverage.  However, the proportional change in SAV coverage with increasing contribution is not linear.  For example, contributions of 2.4 (-2.4) and 6.3 (-6.3) correspond to 75% and 90% increases (decreases) in SAV coverage, respectively.  Shading illustrates the 95% confidence interval of the associations and circles the deviations of the observed data from the fitted association, respectively.  
+
+```{r SAV_depth1, fig.keep="none"}
+## Plot figure associations between depth and SAV coverage over time
+source("./R/figure_2_SAV_v_depth.R")
+```
+
+```{r SAV_depth2, fig.width=6.5, fig.height=10}
+## Plot figure associations between depth and SAV coverage over time
+print(p)
+```
+
+# Changes in SAV coverage in Lake Mattamuskeet
+
+## Spatially-explicit estimates of SAV coverage
+```{r SAV_maps, fig.width=10, fig.height=5.5}
+## Plot prediction of SAV coverage based on final models
+source("./R/figure_3_SAV_maps.R")
+print(p)
+```
+
+## Changes in SAV area, Chesapeake Bay SAV classification
+
+Here we generate 1000 posterior simulations from the final GAMs to evaluate uncertainty in the spatially-explicit estimates of SAV coverage (see Figure 3).  In short, the code in [`simulate_SAV_posterior.R`]("./R/simulate_SAV_posterior.R") generates 1000 simulations from the final GAM models, generates the spatially-explicit estimates of SAV coverage in Lake Mattamuskeet, categorizes them according to those used in the Chesapeake Bay (see below), and then summarizes the area of Lake Mattamuskeet falling into each category.  The categorization follows Chesapeake Bay (Orth et al. 2015):
+
+- dense (70-100%);
+- moderate (40-70%); 
+- sparse (10-40%); and
+- very sparse (<10% coverage)
+
+```{r SAV_area, fig.width=6, fig.height=7.5}
+#source("./R/simulate_SAV_posterior.R")
+#sav_fits <- simulate_SAV_posterior(nsim = 1000, seed = 1050412280)
+#save(sav_fits, file = "./Output/posterior_SAV.rda")
+
+## Plot figure showing areal changes in SAV coverage over time
+source("./R/figure_4_SAV_areal_changes.R")
+print(p)
+```
