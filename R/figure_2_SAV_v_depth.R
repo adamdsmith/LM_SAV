@@ -1,7 +1,7 @@
 ##### FIGURE 2 ######
 
 ## Load final GAM models
-load("./Output/final_SAV_models.rda", verbose = TRUE)
+load("./Output/final_SAV_models.rda")
 
 east <- sav[sav$basin == "east", ]
 west <- sav[sav$basin == "west", ]

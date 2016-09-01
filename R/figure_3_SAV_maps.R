@@ -39,7 +39,7 @@
 # Stack them and name them
 #sav_rasts <- stack(sav_rasts); names(sav_rasts) <- pred_yrs
 #save(sav_rasts, file = "./Output/fitted_rasters.rda")
-load("./Output/fitted_rasters.rda", verbose = TRUE)
+load("./Output/fitted_rasters.rda")
 
 ## Create ggplot-accessible version of Lake Mattamuskeet boundary
 if (!exists("LM")) {
