@@ -35,7 +35,7 @@ Spatially-explicit estimates of SAV coverage
 Changes in SAV area, Chesapeake Bay SAV classification
 ------------------------------------------------------
 
-Here we generate 1000 posterior simulations from the final GAMs to evaluate uncertainty in the spatially-explicit estimates of SAV coverage (see Figure 3). In short, the code in [`simulate_SAV_posterior.R`](%22./R/simulate_SAV_posterior.R%22) generates 1000 simulations from the final GAM models, generates the spatially-explicit estimates of SAV coverage in Lake Mattamuskeet, categorizes them according to those used in the Chesapeake Bay (see below), and then summarizes the area of Lake Mattamuskeet falling into each category. The categorization follows Chesapeake Bay (Orth et al. 2015):
+Here we generate 1000 posterior simulations from the final GAMs to evaluate uncertainty in the spatially-explicit estimates of SAV coverage (see Figure 3). In short, the code in [`simulate_SAV_posterior.R`](./R/simulate_SAV_posterior.R) generates 1000 simulations from the final GAM models, generates the spatially-explicit estimates of SAV coverage in Lake Mattamuskeet, categorizes them according to those used in the Chesapeake Bay (see below), and then summarizes the area of Lake Mattamuskeet falling into each category. The categorization follows Chesapeake Bay (Orth et al. 2015):
 
 -   dense (70-100%);
 -   moderate (40-70%);
