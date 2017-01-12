@@ -11,6 +11,7 @@ CB_redux <- sav_fits %>%
             ucl = quantile(area_ha, 0.975)) %>%
   ungroup() %>%
   mutate(basin = factor(basin, levels = c("west", "east")),
+         fyear = factor(year, labels = c(1,3,5,7,9,12,15,16,17)),
          year = as.numeric(as.character(year)))
 #  filter(class %in% as.character(c(1,4)))
 
@@ -29,7 +30,7 @@ if (export_excel) {
 pd <- position_dodge(width = 0.75)
 custom_breaks <- seq(0, 10000, 1000)
 custom_labels <- every_nth(custom_breaks/1000, 2, inverse = TRUE)
-panel_labels <- data.frame(year = 1988.25, med = Inf, 
+panel_labels <- data.frame(fyear = 0.25, med = Inf, 
                            basin = levels(CB_redux$basin), 
                            p_label = c("West", "East"))
 vir_cols <- c(viridis(1, b=0.9, e=0.9), #Dense
@@ -38,7 +39,7 @@ vir_cols <- c(viridis(1, b=0.9, e=0.9), #Dense
               viridis(1, b=0.05, e=0.05)) #Very sparse
 
 theme_set(theme_classic(base_size = 16))
-p <- ggplot(CB_redux, aes(x = year, y = med, colour = label)) +
+p <- ggplot(CB_redux, aes(x = as.numeric(as.character(fyear)), y = med, colour = label)) +
   geom_errorbar(aes(ymin = lcl, ymax = ucl), width = 0, position = pd, size = 1) +
   geom_line(linetype = "dashed", position = pd, size = 1) +
   geom_point(aes(shape = label, fill = label), color = "black", size = 2.5, position = pd) + 
@@ -52,8 +53,11 @@ p <- ggplot(CB_redux, aes(x = year, y = med, colour = label)) +
                      guide = guide_legend(ncol = 2, title.hjust =0.5,
                                           title.position = "top")) +
   annotate("segment", x = -Inf, xend = Inf, y = -Inf, yend = -Inf) +
-  scale_x_continuous("", breaks = unique(as.numeric(CB_redux$year)),
-                     limits = c(1988, 2016), expand = c(0,0)) +
+  scale_x_continuous("", limits = c(0,18), expand = c(0,0), 
+                     breaks = as.numeric(levels(CB_redux$fyear)),
+                     labels = unique(CB_redux$year)) +
+  # scale_x_continuous("", breaks = unique(as.numeric(CB_redux$year)),
+  #                    limits = c(1988, 2016), expand = c(0,0)) +
   scale_y_continuous("Area (ha x 1000) of SAV",
                      breaks = custom_breaks, labels = custom_labels) +
   facet_grid(basin ~ ., scales = "free_y", space = "free_y") +
